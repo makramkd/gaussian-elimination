@@ -1,125 +1,154 @@
-//
-//  matrix.hpp
-//  matrix
-//
-//  Created by Makram Kamaleddine on 10/18/15.
-//  Copyright © 2015 Makram Kamaleddine. All rights reserved.
-//
-
 #ifndef matrix_hpp
 #define matrix_hpp
 
 #include <vector>
 #include <algorithm>
-#include "nvector.h"
 
-template<class T>
-class matrix {
-public:
+// fwd declaration: in order to use enable_if
+template<typename, const unsigned int, const unsigned int, typename = void> struct matrix;
+
+// use matrices only for types that are arithmetic (i.e number types)
+template<typename T, const unsigned int N, const unsigned int M>
+struct matrix<T, N, M, typename std::enable_if<std::is_arithmetic<T>::value>::type> {
+
     matrix()
-    :array(nullptr),
-    rows(0),
-    cols(0),
-    arr_size(0)
+    : vec(N * M),
+      rows(N),
+      columns(M)
     {
-        
+
     }
-    
-    ~matrix()
+
+    matrix(T filler)
+    : vec(N * M),
+      rows(N),
+      columns(M)
     {
+        std::fill(vec.begin(), vec.end(), filler);
     }
-    
-    matrix(int rowcols)
-    : array(rowcols * rowcols),
-    rows(rowcols),
-    cols(rowcols),
-    arr_size(rowcols * rowcols)
-    {
-        
-    }
-    
-    matrix(int rows, int cols)
-    : array(rows * cols),
-    rows(rows),
-    cols(cols),
-    arr_size(rows * cols)
-    {
-        
-    }
-    
-    matrix(int rows, int cols, const std::vector<T>& filler)
-    : array(rows * cols),
-    rows(rows),
-    cols(cols),
-    arr_size(rows * cols)
-    {
-        std::copy(filler.begin(), filler.end(), array.begin());
-    }
-    
-    matrix(int rows, int cols, T fill)
-    : array(rows * cols),
-    rows(rows),
-    cols(cols),
-    arr_size(rows * cols)
-    {
-        std::fill(array.begin(), array.end(), fill);
-    }
-    
+
     matrix(const matrix& other)
-    : array(other.rows * other.cols),
-    rows(other.rows),
-    cols(other.cols),
-    arr_size(other.arr_size)
+    : vec(other.vec),
+      rows(other.rows),
+      columns(other.columns)
     {
-        std::copy(other.array.begin(), other.array.end(), array.begin());
+
     }
-    
-    const T& operator()(int i, int j) const
+
+    matrix(std::initializer_list<T> lst)
+    : vec(N * M),
+      rows(N),
+      columns(M)
     {
-        return array[j + i * rows];
+        // only copy if they're the same size as the vector
+        if (lst.size() == N * M) {
+            std::copy(lst.begin(), lst.end(), vec.begin());
+        }
     }
-    
-    T& operator()(int i, int j)
+
+    T& operator()(unsigned int i, unsigned int j)
     {
-        return array[j + i * rows];
+        return vec[i * columns + j];
     }
-    
-    void set(int i, int j, T value)
+
+    const T& operator()(unsigned int i, unsigned int j) const
     {
-        array[j + i * rows] = value;
+        return vec[i * columns + j];
     }
-    
-    int rowCount() const
+
+    unsigned int rowCount() const
     {
         return rows;
     }
-    
-    int colCount() const
+
+    unsigned int colCount() const
     {
-        return cols;
+        return columns;
     }
-    
-    std::vector<T> data()
+
+    // data interface: return internal data
+    std::vector<T> data() const
     {
-        return array;
+        return vec;
     }
-    
-    int arraySize() const
-    {
-        return arr_size;
-    }
-    
+
 private:
-    std::vector<T> array;
-    int rows;
-    int cols;
-    int arr_size;
+    std::vector<T> vec;
+    const unsigned int rows;
+    const unsigned int columns;
 };
 
-template<class T>
-nvector<T> backsub(const matrix<T>& U, const nvector<T>& b)
+// partial specialization of matrix in order to add some familiar operator[] syntax
+// rather than using operator() for both matrices and vectors
+template<typename T, const unsigned int N>
+struct matrix<T, N, 1, typename std::enable_if<std::is_arithmetic<T>::value>::type> {
+
+    matrix()
+    : vec(N),
+      rows(N)
+    {
+
+    }
+
+    matrix(T filler)
+    : vec(N),
+      rows(N)
+    {
+        std::fill(vec.begin(), vec.end(), filler);
+    }
+
+    matrix(const matrix& other)
+    : vec(other.vec),
+      rows(other.rows)
+    {
+
+    }
+
+    matrix(std::initializer_list<T> lst)
+    : vec(N),
+      rows(N)
+    {
+        if (lst.size() == N) {
+            std::copy(lst.begin(), lst.end(), vec.begin());
+        }
+    }
+
+    T& operator[](unsigned int i)
+    {
+        return vec[i];
+    }
+
+    const T& operator[](unsigned int i) const
+    {
+        return vec[i];
+    }
+
+    unsigned int size() const
+    {
+        return rows;
+    }
+
+    typename std::vector<T>::const_iterator begin() const
+    {
+        return vec.cbegin();
+    }
+
+    typename std::vector<T>::const_iterator end() const
+    {
+        return vec.cend();
+    }
+private:
+    std::vector<T> vec;
+    unsigned int rows;
+};
+
+template<typename T, const unsigned int N>
+using nvector = matrix<T, N, 1, typename std::enable_if<std::is_arithmetic<T>::value>::type>;
+
+template<class T, unsigned int N>
+nvector<T, N> backsub(const matrix<T, N, N>& U, const nvector<T, N>& b)
 {
-    nvector<T> solution(b.size());
+    nvector<T, N> solution;
     
     const auto n = U.rowCount();
     for (int i = n - 1; i >= 0; --i) {
@@ -133,10 +162,10 @@ nvector<T> backsub(const matrix<T>& U, const nvector<T>& b)
     return solution;
 }
 
-template<class T>
-nvector<T> gaussian_no_pivoting(const matrix<T>& A, nvector<T> b)
+template<class T, unsigned int N>
+nvector<T, N> gaussian_no_pivoting(const matrix<T, N, N>& A, nvector<T, N> b)
 {
-    matrix<T> partial(A); // to row reduce to upper triangular
+    matrix<T, N, N> partial(A); // to row reduce to upper triangular
     
     // code here
     const auto nMinus1 = partial.colCount() - 1;
@@ -165,10 +194,10 @@ nvector<T> gaussian_no_pivoting(const matrix<T>& A, nvector<T> b)
     return backsub(partial, b);
 }
 
-template<class T>
-nvector<T> gaussian_partial_pivoting(const matrix<T>& A, nvector<T> b)
+template<class T, unsigned int N>
+nvector<T, N> gaussian_partial_pivoting(const matrix<T, N, N>& A, nvector<T, N> b)
 {
-    matrix<T> partial(A); // to row reduce to upper triangular form
+    matrix<T, N, N> partial(A); // to row reduce to upper triangular form
     std::vector<int> piv(A.rowCount()); // pivot vector
 
     // init the pivot vector with the default (no pivots)
@@ -217,11 +246,11 @@ nvector<T> gaussian_partial_pivoting(const matrix<T>& A, nvector<T> b)
     return backsub(partial, b);
 }
 
-template<class T>
-matrix<T> gaussian_complete_pivoting(const matrix<T>& A, const matrix<T>& b)
+template<class T, unsigned int N>
+nvector<T, N> gaussian_complete_pivoting(const matrix<T, N, N>& A, const nvector<T, N>& b)
 {
-    matrix<T> partial(A); // to row reduce
-    matrix<T> result(b.rowCount(), b.colCount()); // to return
+    matrix<T, N, N> partial(A); // to row reduce
+    nvector<T, N> result; // to return
     
     // code here
     
