@@ -23,5 +23,8 @@ int main() {
     std::cout << std::endl;
 
     auto x = gaussian_no_pivoting(m1, b);
+    auto y = gaussian_partial_pivoting(m1, b);
+
     std::cout << "x is: (" << x[0] << ", " << x[1] << ", " << x[2] << ", " << x[3] << ")" << std::endl;
+    std::cout << "y is: (" << y[0] << ", " << y[1] << ", " << y[2] << ", " << y[3] << ")" << std::endl;
 }

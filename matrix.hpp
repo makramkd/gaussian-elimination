@@ -1,14 +1,15 @@
 #ifndef matrix_hpp
 #define matrix_hpp
 
+#include <cmath>
 #include <vector>
 #include <algorithm>
 
 // fwd declaration: in order to use enable_if
-template<typename, const unsigned int, const unsigned int, typename = void> struct matrix;
+template<typename, unsigned int, unsigned int, typename = void> struct matrix;
 
 // use matrices only for types that are arithmetic (i.e number types)
-template<typename T, const unsigned int N, const unsigned int M>
+template<typename T, unsigned int N, unsigned int M>
 struct matrix<T, N, M, typename std::enable_if<std::is_arithmetic<T>::value>::type> {
 
     matrix()
@@ -80,7 +81,7 @@ private:
 
 // partial specialization of matrix in order to add some familiar operator[] syntax
 // rather than using operator() for both matrices and vectors
-template<typename T, const unsigned int N>
+template<typename T, unsigned int N>
 struct matrix<T, N, 1, typename std::enable_if<std::is_arithmetic<T>::value>::type> {
 
     matrix()
@@ -142,7 +143,7 @@ private:
     unsigned int rows;
 };
 
-template<typename T, const unsigned int N>
+template<typename T, unsigned int N>
 using nvector = matrix<T, N, 1, typename std::enable_if<std::is_arithmetic<T>::value>::type>;
 
 template<class T, unsigned int N>
@@ -198,36 +199,36 @@ template<class T, unsigned int N>
 nvector<T, N> gaussian_partial_pivoting(const matrix<T, N, N>& A, nvector<T, N> b)
 {
     matrix<T, N, N> partial(A); // to row reduce to upper triangular form
-    std::vector<int> piv(A.rowCount()); // pivot vector
+    std::vector<int> piv(A.rowCount()); // row pivot vector
 
     // init the pivot vector with the default (no pivots)
     for (int i = 0; i < piv.size(); ++i) {
-        piv[i] = i + 1;
+        piv[i] = i;
     }
 
     const auto nMinus1 = partial.colCount() - 1;
     const auto n = partial.rowCount();
     for (int i = 0; i < nMinus1; ++i) {
+
+        // do the pivot first
+        T magnitude = 0;
+        int index = -1;
+        for (int j = i; j <= nMinus1; ++j) {
+            if (std::abs(partial(piv[j], i)) > magnitude) {
+                magnitude = std::abs(partial(piv[j], i));
+                index = j;
+            }
+        }
+
+        if (index != -1) {
+            std::swap(piv[i], piv[index]);
+        }
+
         for (int j = i + 1; j < n; ++j) {
-            // do the pivot
-            auto maxvalue = partial(j, i);
-            int pivotIndex = -1;
-            for (int k = j + 1; k < n; ++k) {
-                if (partial(k, i) > maxvalue) {
-                    pivotIndex = k;
-                    maxvalue = partial(k, i);
-                }
-            }
-
-            if (pivotIndex != -1) {
-                // do the swap
-                std::swap(piv[j], piv[pivotIndex]);
-            }
-
             // calculate the ratio
             auto below = partial(piv[j], i);
             auto diag = partial(piv[i], i);
-            auto ratio = partial(piv[i], i) / partial(piv[i], i);
+            auto ratio = partial(piv[j], i) / partial(piv[i], i);
             for (int k = i; k < n; ++k) {
                 // modify matrix entry
                 auto pjk = partial(piv[j], k);
@@ -236,10 +237,10 @@ nvector<T, N> gaussian_partial_pivoting(const matrix<T, N, N>& A, nvector<T, N> 
             }
 
             // modify result vector
-            auto rj0 = b[j];
-            auto bi0 = b[i];
+            auto rj0 = b[piv[j]];
+            auto bi0 = b[piv[i]];
             b[piv[j]] = b[piv[j]] - ratio * b[piv[i]];
-            auto rjAfter = b[j];
+            auto rjAfter = b[piv[j]];
         }
     }
 
