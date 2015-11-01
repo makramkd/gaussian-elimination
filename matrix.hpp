@@ -206,7 +206,7 @@ nvector<T> backsub(const matrix<T>& U, const nvector<T>& b, std::vector<int> piv
     nvector<T> solution2(b.size());
     for (int i = 0; i < piv.size(); ++i)
     {
-        solution2[i] = solution[piv[cpiv[i]]];
+        solution2[cpiv[i]] = solution[piv[i]];
     }
 
     return solution2;
