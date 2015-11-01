@@ -6,13 +6,13 @@
 #include <algorithm>
 
 // fwd declaration: in order to use enable_if
-template<typename, unsigned int, unsigned int, typename = void> struct matrix;
+template<typename, typename = void> struct matrix;
 
 // use matrices only for types that are arithmetic (i.e number types)
-template<typename T, unsigned int N, unsigned int M>
-struct matrix<T, N, M, typename std::enable_if<std::is_arithmetic<T>::value>::type> {
+template<typename T>
+struct matrix<T, typename std::enable_if<std::is_arithmetic<T>::value>::type> {
 
-    matrix()
+    matrix(unsigned N, unsigned M)
     : vec(N * M),
       rows(N),
       columns(M)
@@ -20,7 +20,7 @@ struct matrix<T, N, M, typename std::enable_if<std::is_arithmetic<T>::value>::ty
 
     }
 
-    matrix(T filler)
+    matrix(unsigned N, unsigned M, T filler)
     : vec(N * M),
       rows(N),
       columns(M)
@@ -36,7 +36,7 @@ struct matrix<T, N, M, typename std::enable_if<std::is_arithmetic<T>::value>::ty
 
     }
 
-    matrix(std::initializer_list<T> lst)
+    matrix(unsigned N, unsigned M, std::initializer_list<T> lst)
     : vec(N * M),
       rows(N),
       columns(M)
@@ -79,77 +79,70 @@ private:
     const unsigned int columns;
 };
 
+// forward declaration
+template<typename, typename = void> struct nvector;
+
 // partial specialization of matrix in order to add some familiar operator[] syntax
 // rather than using operator() for both matrices and vectors
-template<typename T, unsigned int N>
-struct matrix<T, N, 1, typename std::enable_if<std::is_arithmetic<T>::value>::type> {
+template<typename T>
+struct nvector<T, typename std::enable_if<std::is_arithmetic<T>::value>::type> {
 
-    matrix()
-    : vec(N),
-      rows(N)
+    nvector(unsigned N)
+    : vec(N, 1)
     {
 
     }
 
-    matrix(T filler)
-    : vec(N),
-      rows(N)
-    {
-        std::fill(vec.begin(), vec.end(), filler);
-    }
-
-    matrix(const matrix& other)
-    : vec(other.vec),
-      rows(other.rows)
+    nvector(unsigned N, T filler)
+    : vec(N, 1, filler)
     {
 
     }
 
-    matrix(std::initializer_list<T> lst)
-    : vec(N),
-      rows(N)
+    nvector(const nvector& other)
+    : vec(other.vec)
     {
-        if (lst.size() == N) {
-            std::copy(lst.begin(), lst.end(), vec.begin());
-        }
+
+    }
+
+    nvector(unsigned N, std::initializer_list<T> lst)
+    : vec(N, 1, lst)
+    {
+
     }
 
     T& operator[](unsigned int i)
     {
-        return vec[i];
+        return vec(i, 0);
     }
 
     const T& operator[](unsigned int i) const
     {
-        return vec[i];
+        return vec(i, 0);
     }
 
     unsigned int size() const
     {
-        return rows;
+        return vec.rowCount();
     }
 
     typename std::vector<T>::const_iterator begin() const
     {
-        return vec.cbegin();
+        return vec.data().cbegin();
     }
 
     typename std::vector<T>::const_iterator end() const
     {
-        return vec.cend();
+        return vec.data().cend();
     }
 private:
-    std::vector<T> vec;
-    unsigned int rows;
+    matrix<T> vec;
 };
 
-template<typename T, unsigned int N>
-using nvector = matrix<T, N, 1, typename std::enable_if<std::is_arithmetic<T>::value>::type>;
-
-template<class T, unsigned int N>
-nvector<T, N> backsub(const matrix<T, N, N>& U, const nvector<T, N>& b)
+template<typename T>
+nvector<T> backsub(const matrix<T>& U, const nvector<T>& b)
 {
-    nvector<T, N> solution;
+    nvector<T> solution(b.size());
     
     const auto n = U.rowCount();
     for (int i = n - 1; i >= 0; --i) {
@@ -163,10 +156,58 @@ nvector<T, N> backsub(const matrix<T, N, N>& U, const nvector<T, N>& b)
     return solution;
 }
 
-template<class T, unsigned int N>
-nvector<T, N> gaussian_no_pivoting(const matrix<T, N, N>& A, nvector<T, N> b)
+template<typename T>
+nvector<T> backsub(const matrix<T>& U, const nvector<T>& b, std::vector<int> piv)
 {
-    matrix<T, N, N> partial(A); // to row reduce to upper triangular
+    nvector<T> solution(b.size());
+
+    const auto n = U.rowCount();
+    for (int i = n - 1; i >= 0; --i) {
+        solution[piv[i]] = b[piv[i]];
+        for (int j = i + 1; j < n; ++j) {
+            solution[piv[i]] = solution[piv[i]] - U(piv[i], j) * solution[piv[j]];
+        }
+        solution[piv[i]] /= U(piv[i], i);
+    }
+
+    // translate the pivots back
+    nvector<T> solution2(b.size());
+    for (int i = 0; i < piv.size(); ++i)
+    {
+        solution2[i] = solution[piv[i]];
+    }
+
+    return solution2;
+}
+
+template<typename T>
+nvector<T> backsub(const matrix<T>& U, const nvector<T>& b, std::vector<int> piv, std::vector<int> cpiv)
+{
+    nvector<T> solution(b.size());
+
+    const auto n = U.rowCount();
+    for (int i = n - 1; i >= 0; --i) {
+        solution[piv[i]] = b[piv[i]];
+        for (int j = i + 1; j < n; ++j) {
+            solution[piv[i]] = solution[piv[i]] - U(piv[i], cpiv[j]) * solution[piv[j]];
+        }
+        solution[piv[i]] /= U(piv[i], cpiv[i]);
+    }
+
+    // translate the pivots back
+    nvector<T> solution2(b.size());
+    for (int i = 0; i < piv.size(); ++i)
+    {
+        solution2[i] = solution[piv[i]];
+    }
+
+    return solution2;
+}
+
+template<class T>
+nvector<T> gaussian_no_pivoting(const matrix<T>& A, nvector<T> b)
+{
+    matrix<T> partial(A); // to row reduce to upper triangular
     
     // code here
     const auto nMinus1 = partial.colCount() - 1;
@@ -195,10 +236,10 @@ nvector<T, N> gaussian_no_pivoting(const matrix<T, N, N>& A, nvector<T, N> b)
     return backsub(partial, b);
 }
 
-template<class T, unsigned int N>
-nvector<T, N> gaussian_partial_pivoting(const matrix<T, N, N>& A, nvector<T, N> b)
+template<typename T>
+nvector<T> gaussian_partial_pivoting(const matrix<T>& A, nvector<T> b)
 {
-    matrix<T, N, N> partial(A); // to row reduce to upper triangular form
+    matrix<T> partial(A); // to row reduce to upper triangular form
     std::vector<int> piv(A.rowCount()); // row pivot vector
 
     // init the pivot vector with the default (no pivots)
@@ -244,19 +285,70 @@ nvector<T, N> gaussian_partial_pivoting(const matrix<T, N, N>& A, nvector<T, N> 
         }
     }
 
-    return backsub(partial, b);
+    return backsub(partial, b, piv);
 }
 
-template<class T, unsigned int N>
-nvector<T, N> gaussian_complete_pivoting(const matrix<T, N, N>& A, const nvector<T, N>& b)
+template<typename T>
+nvector<T> gaussian_complete_pivoting(const matrix<T>& A, const nvector<T>& b)
 {
-    matrix<T, N, N> partial(A); // to row reduce
-    nvector<T, N> result; // to return
-    
-    // code here
-    
-    
-    return result;
+    matrix<T> partial(A); // to row reduce to upper triangular form
+    std::vector<int> piv(A.rowCount()); // row pivot vector
+    std::vector<int> cpiv(A.colCount()); // column pivot vector
+
+    // init the pivot vectors with the default (no pivots)
+    for (int i = 0; i < piv.size(); ++i) {
+        piv[i] = i;
+        cpiv[i] = i;
+    }
+
+    const auto nMinus1 = partial.colCount() - 1;
+    const auto n = partial.rowCount();
+    for (int i = 0; i < nMinus1; ++i) {
+
+        // do the pivot first
+        T magnitude = 0;
+        int row_index = -1;
+        int col_index = -1;
+        for (int j = i; j <= nMinus1; ++j) {
+            for (int k = i; k <= nMinus1; ++k)
+            {
+                if (std::abs(partial(piv[j], piv[k])) > magnitude) {
+                    magnitude = std::abs(partial(piv[j], piv[k]));
+                    row_index = j;
+                    col_index = k;
+                }
+            }
+        }
+
+        if (row_index != -1) {
+            std::swap(piv[i], piv[row_index]);
+        }
+
+        if (col_index != -1) {
+            std::swap(cpiv[i], cpiv[col_index]);
+        }
+
+        for (int j = i + 1; j < n; ++j) {
+            // calculate the ratio
+            auto below = partial(piv[j], i);
+            auto diag = partial(piv[i], i);
+            auto ratio = partial(piv[j], i) / partial(piv[i], i);
+            for (int k = i; k < n; ++k) {
+                // modify matrix entry
+                auto pjk = partial(piv[j], k);
+                auto pik = partial(piv[i], k);
+                partial(piv[j], cpiv[k]) = partial(piv[j], cpiv[k]) - ratio * partial(piv[i], cpiv[k]);
+            }
+
+            // modify result vector
+            auto rj0 = b[piv[j]];
+            auto bi0 = b[piv[i]];
+            b[piv[j]] = b[piv[j]] - ratio * b[piv[i]];
+            auto rjAfter = b[piv[j]];
+        }
+    }
+
+    return backsub(partial, b, piv, cpiv);
 }
 
 #endif /* matrix_hpp */
