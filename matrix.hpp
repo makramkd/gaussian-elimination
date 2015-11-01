@@ -83,6 +83,27 @@ struct matrix<T, typename std::enable_if<std::is_arithmetic<T>::value>::type> {
         return vec;
     }
 
+    T infnorm()
+    {
+        // store rowsums in v
+        std::vector<T> v(rows);
+        for (auto i = 0; i < rows; ++i)
+        {
+            std::vector<T> temp(columns);
+            for (auto j = 0; j < columns; ++j)
+            {
+                temp[j] = this->operator()(i, j);
+            }
+            // transform everything into positive
+            std::transform(temp.begin(), temp.end(), temp.begin, [](T value) -> T{
+                return std::abs(value);
+            });
+            // accumulate
+            v[i] = std::accumulate(temp.begin(), temp.end(), 0.0);
+        }
+        return std::max_element(v.begin(), v.end());
+    }
+
 private:
     std::vector<T> vec;
     const unsigned int rows;
@@ -145,6 +166,15 @@ struct nvector<T, typename std::enable_if<std::is_arithmetic<T>::value>::type> {
     {
         return vec.data().cend();
     }
+
+    T inf_norm() const
+    {
+        std::vector<T> data(vec.data());
+        std::transform(vec.data().begin(), vec.data().end(), data.begin(), [](T value) -> T {
+            return std::abs(value);
+        });
+        return std::max_element(data.begin(), data.end());
+    }
 private:
     matrix<T> vec;
 };
@@ -185,6 +215,61 @@ std::ostream& operator<<(std::ostream& stream, const matrix<T>& mat)
     }
     stream << "]";
     return stream;
+}
+
+// overload operator* for matrix-vector multiplication
+template<typename T>
+nvector<T> operator*(const matrix<T>& M, const nvector<T>& v)
+{
+    // dimension check
+    if (M.colCount() != v.size()) {
+        throw std::invalid_argument("Matrix and vector dimensions are not compatible");
+    }
+
+    nvector<T> result(v.size());
+    for (auto i = 0; i < M.rowCount(); ++i)
+    {
+        T sum = 0;
+        // do an inner product
+        for (auto j = 0; j < M.colCount(); ++j)
+        {
+            sum += M(i, j) * v[j];
+        }
+        result[i] = sum;
+    }
+
+    return result;
+}
+
+template<typename T>
+nvector<T> operator-(const nvector<T>& v1, const nvector<T>& v2)
+{
+    // dim check
+    if (v1.size() != v2.size()) {
+        throw std::invalid_argument("Vector dimensions are not equal");
+    }
+
+    nvector<T> result(v1.size());
+    for (auto i = 0; i < v1.size(); ++i)
+    {
+        result[i] = v1[i] - v2[i];
+    }
+
+    return result;
+}
+
+template<typename T>
+T relative_residual(const matrix<T>& m, const nvector<T>& rhs, const nvector<T>& xbar)
+{
+    auto rbar = rhs - (m * xbar);
+    return rbar.inf_norm() / rhs.inf_norm();
+}
+
+template<typename T>
+T relative_error(const nvector<T>& xbar, const nvector<T>& xstar)
+{
+    auto numerator = xbar - xstar;
+    return numerator.inf_norm() / xstar.inf_norm();
 }
 
 // regular back-substitution without any regard for pivoting:
