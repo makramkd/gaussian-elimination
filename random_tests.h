@@ -58,23 +58,39 @@ void test_random_matrices(unsigned minMatrixSize, unsigned maxMatrixSize,
         for (int j = 0; j < testCount; ++j)
         {
             auto matrix = generate_random_matrix(i, i);
-            auto vector = generate_rhs_vector(i);
+            auto xstar = generate_x_vector(i); // the solution we want: xstar
+            auto rhs = matrix * xstar; // the rhs of the system
 
-            auto no_piv = gaussian_no_pivoting(matrix, vector);
-            auto p_piv = gaussian_partial_pivoting(matrix, vector);
-            auto c_piv = gaussian_complete_pivoting(matrix, vector);
+            auto xbar_nopiv = gaussian_no_pivoting(matrix, rhs);
+            auto xbar_pp = gaussian_partial_pivoting(matrix, rhs);
+            auto xbar_cp = gaussian_complete_pivoting(matrix, rhs);
+
+            auto rel_res_nopiv = relative_residual(matrix, rhs, xbar_nopiv);
+            auto rel_err_nopiv = relative_error(xbar_nopiv, xstar);
+
+            auto rel_res_pp = relative_residual(matrix, rhs, xbar_pp);
+            auto rel_err_pp = relative_error(xbar_pp, xstar);
+
+            auto rel_res_cp = relative_residual(matrix, rhs, xbar_cp);
+            auto rel_err_cp = relative_error(xbar_cp, xstar);
 
             file << "Test #:" << j + 1 << std::endl;
             file << "Input matrix:" << std::endl;
             file << matrix << std::endl;
             file << "Input RHS:" << std::endl;
-            file << vector << std::endl;
+            file << rhs << std::endl;
             file << "Result from No pivoting:" << std::endl;
-            file << no_piv << std::endl;
+            file << xbar_nopiv << std::endl;
+            file << "Relative residual:" << rel_res_nopiv << std::endl;
+            file << "Relative error:" << rel_err_nopiv << std::endl;
             file << "Result from Partial Pivoting:" << std::endl;
-            file << p_piv << std::endl;
+            file << xbar_pp << std::endl;
+            file << "Relative residual:" << rel_res_pp << std::endl;
+            file << "Relative error:" << rel_err_pp << std::endl;
             file << "Result from Complete pivoting:" << std::endl;
-            file << c_piv << std::endl;
+            file << xbar_cp << std::endl;
+            file << "Relative residual:" << rel_res_cp << std::endl;
+            file << "Relative error:" << rel_err_cp << std::endl;
         }
         file << "END tests on size: " << i << std::endl;
     }
