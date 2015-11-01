@@ -198,7 +198,7 @@ nvector<T> backsub(const matrix<T>& U, const nvector<T>& b, std::vector<int> piv
     nvector<T> solution2(b.size());
     for (int i = 0; i < piv.size(); ++i)
     {
-        solution2[i] = solution[piv[i]];
+        solution2[i] = solution[piv[cpiv[i]]];
     }
 
     return solution2;
@@ -289,7 +289,7 @@ nvector<T> gaussian_partial_pivoting(const matrix<T>& A, nvector<T> b)
 }
 
 template<typename T>
-nvector<T> gaussian_complete_pivoting(const matrix<T>& A, const nvector<T>& b)
+nvector<T> gaussian_complete_pivoting(const matrix<T>& A, nvector<T> b)
 {
     matrix<T> partial(A); // to row reduce to upper triangular form
     std::vector<int> piv(A.rowCount()); // row pivot vector
@@ -330,13 +330,13 @@ nvector<T> gaussian_complete_pivoting(const matrix<T>& A, const nvector<T>& b)
 
         for (int j = i + 1; j < n; ++j) {
             // calculate the ratio
-            auto below = partial(piv[j], i);
-            auto diag = partial(piv[i], i);
-            auto ratio = partial(piv[j], i) / partial(piv[i], i);
+            auto below = partial(piv[j], cpiv[i]);
+            auto diag = partial(piv[i], cpiv[i]);
+            auto ratio = partial(piv[j], cpiv[i]) / partial(piv[i], cpiv[i]);
             for (int k = i; k < n; ++k) {
                 // modify matrix entry
-                auto pjk = partial(piv[j], k);
-                auto pik = partial(piv[i], k);
+                auto pjk = partial(piv[j], cpiv[k]);
+                auto pik = partial(piv[i], cpiv[k]);
                 partial(piv[j], cpiv[k]) = partial(piv[j], cpiv[k]) - ratio * partial(piv[i], cpiv[k]);
             }
 
