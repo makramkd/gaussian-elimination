@@ -8,5 +8,6 @@ int main() {
     const unsigned maxMatrixSize = 4;
     const int testCount = 15; // 5 tests per size
 
-    test_random_matrices(minMatrixSize, maxMatrixSize, testCount, "random_tests4.txt");
+    test_random_matrices(minMatrixSize, maxMatrixSize, testCount, "random_tests9.txt");
+
 }
