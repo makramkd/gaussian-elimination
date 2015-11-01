@@ -152,26 +152,25 @@ private:
 template<typename T>
 std::ostream& operator<<(std::ostream& stream, const nvector<T>& nvec)
 {
-    stream << "(";
+    stream << "[";
     for (auto i = 0; i < nvec.size(); ++i)
     {
         if (i != nvec.size() - 1) {
-            stream << nvec[i] << ", ";
+            stream << nvec[i] << "; ";
         } else {
             stream << nvec[i];
         }
     }
-    stream << ")";
+    stream << "]";
     return stream;
 }
 
 template<typename T>
 std::ostream& operator<<(std::ostream& stream, const matrix<T>& mat)
 {
-    stream << "{";
+    stream << "[";
     for (auto i = 0; i < mat.rowCount(); ++i)
     {
-        stream << "(";
         for (auto j = 0; j < mat.colCount(); ++j)
         {
             if (j != mat.colCount() - 1) {
@@ -180,12 +179,11 @@ std::ostream& operator<<(std::ostream& stream, const matrix<T>& mat)
                 stream << mat(i, j);
             }
         }
-        stream << ")";
         if (i != mat.rowCount() - 1) {
-            stream << "," << std::endl;
+            stream << ";" << std::endl;
         }
     }
-    stream << "}";
+    stream << "]";
     return stream;
 }
 
