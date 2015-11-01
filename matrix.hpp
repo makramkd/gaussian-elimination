@@ -309,7 +309,7 @@ nvector<T> gaussian_complete_pivoting(const matrix<T>& A, nvector<T> b)
             for (int k = i; k <= nMinus1; ++k)
             {
                 if (std::abs(partial(piv[j], piv[k])) > magnitude) {
-                    magnitude = std::abs(partial(piv[j], piv[k]));
+                    magnitude = std::abs(partial(piv[j], cpiv[k]));
                     row_index = j;
                     col_index = k;
                 }
