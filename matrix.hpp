@@ -47,6 +47,16 @@ struct matrix<T, typename std::enable_if<std::is_arithmetic<T>::value>::type> {
         }
     }
 
+    matrix(unsigned N, unsigned M, std::vector<T> vector)
+    : vec(N * M),
+      rows(N),
+      columns(M)
+    {
+        if (vector.size() == N * M) {
+            std::copy(vector.begin(), vector.end(), vec.begin());
+        }
+    }
+
     T& operator()(unsigned int i, unsigned int j)
     {
         return vec[i * columns + j];
@@ -138,6 +148,22 @@ struct nvector<T, typename std::enable_if<std::is_arithmetic<T>::value>::type> {
 private:
     matrix<T> vec;
 };
+
+template<typename T>
+std::ostream& operator<<(std::ostream& stream, const nvector<T>& nvec)
+{
+    stream << "(";
+    for (auto i = 0; i < nvec.size(); ++i)
+    {
+        if (i != nvec.size() - 1) {
+            stream << nvec[i] << ", ";
+        } else {
+            stream << nvec[i];
+        }
+    }
+    stream << ")";
+    return stream;
+}
 
 // regular back-substitution without any regard for pivoting:
 // this is to be used only when we do no pivoting: otherwise it's incorrect.
