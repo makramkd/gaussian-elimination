@@ -4,6 +4,7 @@
 #include <cmath>
 #include <vector>
 #include <algorithm>
+#include <numeric>
 
 // fwd declaration: in order to use enable_if
 template<typename, typename = void> struct matrix;
@@ -101,7 +102,7 @@ struct matrix<T, typename std::enable_if<std::is_arithmetic<T>::value>::type> {
             // accumulate
             v[i] = std::accumulate(temp.begin(), temp.end(), 0.0);
         }
-        return std::max_element(v.begin(), v.end());
+        return *(std::max_element(v.begin(), v.end()));
     }
 
 private:
@@ -170,10 +171,10 @@ struct nvector<T, typename std::enable_if<std::is_arithmetic<T>::value>::type> {
     T inf_norm() const
     {
         std::vector<T> data(vec.data());
-        std::transform(vec.data().begin(), vec.data().end(), data.begin(), [](T value) -> T {
+        std::transform(data.begin(), data.end(), data.begin(), [](T value) -> T {
             return std::abs(value);
         });
-        return std::max_element(data.begin(), data.end());
+        return *(std::max_element(data.begin(), data.end()));
     }
 private:
     matrix<T> vec;
