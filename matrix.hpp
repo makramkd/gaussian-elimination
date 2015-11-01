@@ -223,19 +223,13 @@ nvector<T> gaussian_no_pivoting(const matrix<T>& A, nvector<T> b)
     for (int i = 0; i < nMinus1; ++i) {
         for (int j = i + 1; j < n; ++j) {
             // calculate the ratio
-            auto below = partial(j, i);
-            auto diag = partial(i, i);
             auto ratio = partial(j, i) / partial(i, i);
             for (int k = i; k < n; ++k) {
                 // modify matrix entry
-                auto pjk = partial(j, k);
-                auto pik = partial(i, k);
                 partial(j, k) = partial(j, k) - ratio * partial(i, k);
             }
             
             // modify result vector
-            auto rj0 = b[j];
-            auto bi0 = b[i];
             b[j] = b[j] - ratio * b[i];
             auto rjAfter = b[j];
         }
@@ -275,21 +269,14 @@ nvector<T> gaussian_partial_pivoting(const matrix<T>& A, nvector<T> b)
 
         for (int j = i + 1; j < n; ++j) {
             // calculate the ratio
-            auto below = partial(piv[j], i);
-            auto diag = partial(piv[i], i);
             auto ratio = partial(piv[j], i) / partial(piv[i], i);
             for (int k = i; k < n; ++k) {
                 // modify matrix entry
-                auto pjk = partial(piv[j], k);
-                auto pik = partial(piv[i], k);
                 partial(piv[j], k) = partial(piv[j], k) - ratio * partial(piv[i], k);
             }
 
             // modify result vector
-            auto rj0 = b[piv[j]];
-            auto bi0 = b[piv[i]];
             b[piv[j]] = b[piv[j]] - ratio * b[piv[i]];
-            auto rjAfter = b[piv[j]];
         }
     }
 
@@ -339,21 +326,14 @@ nvector<T> gaussian_complete_pivoting(const matrix<T>& A, nvector<T> b)
 
         for (int j = i + 1; j < n; ++j) {
             // calculate the ratio
-            auto below = partial(piv[j], cpiv[i]);
-            auto diag = partial(piv[i], cpiv[i]);
             auto ratio = partial(piv[j], cpiv[i]) / partial(piv[i], cpiv[i]);
             for (int k = i; k < n; ++k) {
                 // modify matrix entry
-                auto pjk = partial(piv[j], cpiv[k]);
-                auto pik = partial(piv[i], cpiv[k]);
                 partial(piv[j], cpiv[k]) = partial(piv[j], cpiv[k]) - ratio * partial(piv[i], cpiv[k]);
             }
 
             // modify result vector
-            auto rj0 = b[piv[j]];
-            auto bi0 = b[piv[i]];
             b[piv[j]] = b[piv[j]] - ratio * b[piv[i]];
-            auto rjAfter = b[piv[j]];
         }
     }
 
