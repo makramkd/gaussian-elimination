@@ -96,7 +96,7 @@ struct matrix<T, typename std::enable_if<std::is_arithmetic<T>::value>::type> {
                 temp[j] = this->operator()(i, j);
             }
             // transform everything into positive
-            std::transform(temp.begin(), temp.end(), temp.begin, [](T value) -> T{
+            std::for_each(temp.begin(), temp.end(), [](T value) -> T{
                 return std::abs(value);
             });
             // accumulate
@@ -171,7 +171,7 @@ struct nvector<T, typename std::enable_if<std::is_arithmetic<T>::value>::type> {
     T inf_norm() const
     {
         std::vector<T> data(vec.data());
-        std::transform(data.begin(), data.end(), data.begin(), [](T value) -> T {
+        std::for_each(data.begin(), data.end(), [](T value) -> T {
             return std::abs(value);
         });
         return *(std::max_element(data.begin(), data.end()));
