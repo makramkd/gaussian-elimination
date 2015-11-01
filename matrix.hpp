@@ -165,6 +165,30 @@ std::ostream& operator<<(std::ostream& stream, const nvector<T>& nvec)
     return stream;
 }
 
+template<typename T>
+std::ostream& operator<<(std::ostream& stream, const matrix<T>& mat)
+{
+    stream << "{";
+    for (auto i = 0; i < mat.rowCount(); ++i)
+    {
+        stream << "(";
+        for (auto j = 0; j < mat.colCount(); ++j)
+        {
+            if (j != mat.colCount() - 1) {
+                stream << mat(i, j) << ", ";
+            } else {
+                stream << mat(i, j);
+            }
+        }
+        stream << ")";
+        if (i != mat.rowCount() - 1) {
+            stream << "," << std::endl;
+        }
+    }
+    stream << "}";
+    return stream;
+}
+
 // regular back-substitution without any regard for pivoting:
 // this is to be used only when we do no pivoting: otherwise it's incorrect.
 template<typename T>
