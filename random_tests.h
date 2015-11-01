@@ -29,6 +29,16 @@ nvector<double> generate_rhs_vector(unsigned N)
     nvector<double> res(N);
     for (unsigned i = 0; i < N; ++i)
     {
+        res[i] = generate_double();
+    }
+    return res;
+}
+
+nvector<double> generate_x_vector(unsigned N)
+{
+    nvector<double> res(N);
+    for (unsigned i = 0; i < N; ++i)
+    {
         res[i] = std::pow(-1.0, i + 1);
     }
     return res;
