@@ -139,6 +139,8 @@ private:
     matrix<T> vec;
 };
 
+// regular back-substitution without any regard for pivoting:
+// this is to be used only when we do no pivoting: otherwise it's incorrect.
 template<typename T>
 nvector<T> backsub(const matrix<T>& U, const nvector<T>& b)
 {
@@ -156,6 +158,9 @@ nvector<T> backsub(const matrix<T>& U, const nvector<T>& b)
     return solution;
 }
 
+// back-substitution overload that takes in a row pivot vector
+// can be called if you don't use pivoting but you need to give it
+// a vanilla row pivot vector (I think you can do this)
 template<typename T>
 nvector<T> backsub(const matrix<T>& U, const nvector<T>& b, std::vector<int> piv)
 {
@@ -180,6 +185,9 @@ nvector<T> backsub(const matrix<T>& U, const nvector<T>& b, std::vector<int> piv
     return solution2;
 }
 
+// overload of back-substitution for complete pivoting.
+// When doing complete pivoting, one _must_ call this template function
+// otherwise, nothing will look right (pretty sure)
 template<typename T>
 nvector<T> backsub(const matrix<T>& U, const nvector<T>& b, std::vector<int> piv, std::vector<int> cpiv)
 {
@@ -204,7 +212,7 @@ nvector<T> backsub(const matrix<T>& U, const nvector<T>& b, std::vector<int> piv
     return solution2;
 }
 
-template<class T>
+template<typename T>
 nvector<T> gaussian_no_pivoting(const matrix<T>& A, nvector<T> b)
 {
     matrix<T> partial(A); // to row reduce to upper triangular
@@ -285,6 +293,7 @@ nvector<T> gaussian_partial_pivoting(const matrix<T>& A, nvector<T> b)
         }
     }
 
+    // call overloaded backsub for partial pivoting
     return backsub(partial, b, piv);
 }
 
@@ -348,6 +357,7 @@ nvector<T> gaussian_complete_pivoting(const matrix<T>& A, nvector<T> b)
         }
     }
 
+    // call overloaded backsub for complete pivoting
     return backsub(partial, b, piv, cpiv);
 }
 
