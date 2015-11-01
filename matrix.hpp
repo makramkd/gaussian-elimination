@@ -84,7 +84,7 @@ struct matrix<T, typename std::enable_if<std::is_arithmetic<T>::value>::type> {
         return vec;
     }
 
-    T infnorm()
+    T infnorm() const
     {
         // store rowsums in v
         std::vector<T> v(rows);
