@@ -13,3 +13,4 @@ In addition to the above algorithms, we have for each algorithm a different back
 class and a templated vector class, that were done in as simplistic a fashion as possible so as not to complicate the implementation
 of the elimination algorithm, as that is the purpose of this project.
 
+Credit for the repo photo: got it from here: http://mathground.net/german-mathematician-carl-friedrich-gauss/
